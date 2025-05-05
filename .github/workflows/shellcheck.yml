@@ -2,10 +2,11 @@ name: 'Tests: shellcheck'
 
 on: [pull_request, push]
 
+permissions:
+  contents: read
+
 jobs:
   shellcheck_matrix:
-    permissions:
-      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,10 +27,23 @@ jobs:
             file: nvm-exec # only runs in bash
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Install shellcheck
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          allowed-endpoints:
+            ghcr.io:443
+            github.com:443
+            pkg-containers.githubusercontent.com:443
+            formulae.brew.sh:443
+      - uses: actions/checkout@v4
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install latest shellcheck
         run: brew install shellcheck
-      - run: "shellcheck --version"
+        env:
+          HOMEBREW_NO_ANALYTICS: 1
+      - run: which shellcheck
+      - run: shellcheck --version
       - name: Run shellcheck on ${{ matrix.file }}
         run: shellcheck -s ${{ matrix.shell }} ${{ matrix.file }}
 
@@ -39,4 +53,4 @@ jobs:
       needs: [shellcheck_matrix]
       runs-on: ubuntu-latest
       steps:
-        - run: 'echo tests completed'
+        - run: true
